@@ -7,7 +7,7 @@ bool C_BaseEntity::IsPlayer()
 	//index: 152
 	//ref: "effects/nightvision"
 	//sig: 8B 92 ? ? ? ? FF D2 84 C0 0F 45 F7 85 F6
-	return CallVFunction<bool(__thiscall*)(C_BaseEntity*)>(this, 155)(this);
+	return CallVFunction<bool(__thiscall*)(C_BaseEntity*)>(this, 156)(this);
 }
 
 bool C_BaseEntity::IsLoot() {
@@ -27,7 +27,7 @@ bool C_BaseEntity::IsWeapon()
 	//index: 160
 	//ref: "CNewParticleEffect::DrawModel"
 	//sig: 8B 80 ? ? ? ? FF D0 84 C0 74 6F 8B 4D A4
-	return CallVFunction<bool(__thiscall*)(C_BaseEntity*)>(this, 163)(this);
+	return CallVFunction<bool(__thiscall*)(C_BaseEntity*)>(this, 164)(this);
 }
 
 
@@ -43,7 +43,7 @@ bool C_BaseEntity::IsDefuseKit()
 
 CCSWeaponInfo* C_BaseCombatWeapon::GetCSWeaponData()
 {
-	return CallVFunction<CCSWeaponInfo*(__thiscall*)(void*)>(this, 454)(this);
+	return CallVFunction<CCSWeaponInfo*(__thiscall*)(void*)>(this, 455)(this);
 	/*
 	static auto fnGetWpnData
 	= reinterpret_cast<CCSWeaponInfo*(__thiscall*)(void*)>(
@@ -59,18 +59,18 @@ bool C_BaseCombatWeapon::HasBullets()
 
 bool C_BaseCombatWeapon::CanFire()
 {
-	static decltype(this) stored_weapon = nullptr;
-	static auto stored_tick = 0;
-	if (stored_weapon != this || stored_tick >= g_LocalPlayer->m_nTickBase()) {
-		stored_weapon = this;
-		stored_tick = g_LocalPlayer->m_nTickBase();
-		return false; //cannot shoot first tick after switch
-	}
-
-	if (IsReloading() || m_iClip1() <= 0 || !g_LocalPlayer)
+	auto owner = this->m_hOwnerEntity().Get();
+	if (!owner)
 		return false;
 
-	auto flServerTime = g_LocalPlayer->m_nTickBase() * g_GlobalVars->interval_per_tick;
+	if (IsReloading() || m_iClip1() <= 0)
+		return false;
+
+	auto flServerTime = owner->m_nTickBase() * g_GlobalVars->interval_per_tick;
+
+	if (owner->m_flNextAttack() > flServerTime)
+		return false;
+
 
 	return m_flNextPrimaryAttack() <= flServerTime;
 }
@@ -150,17 +150,17 @@ bool C_BaseCombatWeapon::IsReloading()
 
 float C_BaseCombatWeapon::GetInaccuracy()
 {
-	return CallVFunction<float(__thiscall*)(void*)>(this, 476)(this);
+	return CallVFunction<float(__thiscall*)(void*)>(this, 477)(this);
 }
 
 float C_BaseCombatWeapon::GetSpread()
 {
-	return CallVFunction<float(__thiscall*)(void*)>(this, 446)(this);
+	return CallVFunction<float(__thiscall*)(void*)>(this, 447)(this);
 }
 
 void C_BaseCombatWeapon::UpdateAccuracyPenalty()
 {
-	CallVFunction<void(__thiscall*)(void*)>(this, 477)(this);
+	CallVFunction<void(__thiscall*)(void*)>(this, 478)(this);
 }
 
 CUtlVector<IRefCounted*>& C_BaseCombatWeapon::m_CustomMaterials()
@@ -207,8 +207,8 @@ int C_BasePlayer::GetSequenceActivity(int sequence)
 	// sig for stuidohdr_t version: 53 56 8B F1 8B DA 85 F6 74 55
 	// sig for C_BaseAnimating version: 55 8B EC 83 7D 08 FF 56 8B F1 74 3D
 	// c_csplayer vfunc 242, follow calls to find the function.
-
-	static auto get_sequence_activity = reinterpret_cast<int(__fastcall*)(void*, studiohdr_t*, int)>(Utils::PatternScan(GetModuleHandle(L"client_panorama.dll"), "55 8B EC 83 7D 08 FF 56 8B F1 74 3D"));
+	// Thanks @Kron1Q for merge request
+	static auto get_sequence_activity = reinterpret_cast<int(__fastcall*)(void*, studiohdr_t*, int)>(Utils::PatternScan(GetModuleHandle(L"client_panorama.dll"), "55 8B EC 53 8B 5D 08 56 8B F1 83"));
 
 	return get_sequence_activity(this, hdr, sequence);
 }
@@ -403,7 +403,7 @@ bool C_BasePlayer::CanSeePlayer(C_BasePlayer* player, const Vector& pos)
 
 void C_BasePlayer::UpdateClientSideAnimation()
 {
-	return CallVFunction<void(__thiscall*)(void*)>(this, 221)(this);
+	return CallVFunction<void(__thiscall*)(void*)>(this, 222)(this);
 }
 
 void C_BasePlayer::InvalidateBoneCache()

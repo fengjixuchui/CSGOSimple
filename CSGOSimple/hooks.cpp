@@ -72,6 +72,9 @@ namespace Hooks {
 		crosshair_cvar->SetValue(!(g_Options.esp_enabled && g_Options.esp_crosshair));
 
 		DWORD colorwrite, srgbwrite;
+		IDirect3DVertexDeclaration9* vert_dec = nullptr;
+		IDirect3DVertexShader9* vert_shader = nullptr;
+		DWORD dwOld_D3DRS_COLORWRITEENABLE = NULL;
 		pDevice->GetRenderState(D3DRS_COLORWRITEENABLE, &colorwrite);
 		pDevice->GetRenderState(D3DRS_SRGBWRITEENABLE, &srgbwrite);
 
@@ -79,6 +82,11 @@ namespace Hooks {
 		//removes the source engine color correction
 		pDevice->SetRenderState(D3DRS_SRGBWRITEENABLE, false);
 
+		pDevice->GetRenderState(D3DRS_COLORWRITEENABLE, &dwOld_D3DRS_COLORWRITEENABLE);
+		pDevice->GetVertexDeclaration(&vert_dec);
+		pDevice->GetVertexShader(&vert_shader);
+		pDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0xffffffff);
+		pDevice->SetRenderState(D3DRS_SRGBWRITEENABLE, false);
 		pDevice->SetSamplerState(NULL, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
 		pDevice->SetSamplerState(NULL, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 		pDevice->SetSamplerState(NULL, D3DSAMP_ADDRESSW, D3DTADDRESS_WRAP);
@@ -90,11 +98,7 @@ namespace Hooks {
 		ImGui::NewFrame();
 
 
-		ImDrawList* esp_drawlist = nullptr;
-
-	
-
-		esp_drawlist = Render::Get().RenderScene();
+		auto esp_drawlist = Render::Get().RenderScene();
 
 		Menu::Get().Render();
 	
@@ -105,6 +109,10 @@ namespace Hooks {
 
 		pDevice->SetRenderState(D3DRS_COLORWRITEENABLE, colorwrite);
 		pDevice->SetRenderState(D3DRS_SRGBWRITEENABLE, srgbwrite);
+		pDevice->SetRenderState(D3DRS_COLORWRITEENABLE, dwOld_D3DRS_COLORWRITEENABLE);
+		pDevice->SetRenderState(D3DRS_SRGBWRITEENABLE, true);
+		pDevice->SetVertexDeclaration(vert_dec);
+		pDevice->SetVertexShader(vert_shader);
 
 		return oEndScene(pDevice);
 	}
@@ -141,6 +149,10 @@ namespace Hooks {
 		if (g_Options.misc_bhop)
 			BunnyHop::OnCreateMove(cmd);
 
+		// https://github.com/spirthack/CSGOSimple/issues/69
+		if (g_Options.misc_showranks && cmd->buttons & IN_SCORE) // rank revealer will work even after unhooking, idk how to "hide" ranks  again
+			g_CHLClient->DispatchUserMessage(CS_UM_ServerRankRevealAll, 0, 0, nullptr);
+
 
 		verified->m_cmd = *cmd;
 		verified->m_crc = cmd->GetChecksum();
@@ -152,9 +164,8 @@ namespace Hooks {
 		{
 			push ebp
 			mov  ebp, esp
-			push ebx
-			lea  ecx, [esp]
-			push ecx
+			push ebx; not sure if we need this
+			push esp
 			push dword ptr[active]
 			push dword ptr[input_sample_frametime]
 			push dword ptr[sequence_number]
@@ -178,16 +189,14 @@ namespace Hooks {
 				panelId = panel;
 			}
 		}
-		else if (panelId == panel) {
+		else if (panelId == panel) 
+		{
 			//Ignore 50% cuz it called very often
 			static bool bSkip = false;
 			bSkip = !bSkip;
 
 			if (bSkip)
 				return;
-
-			if (g_LocalPlayer && InputSys::Get().IsKeyDown(VK_TAB) && g_Options.misc_showranks)
-				Utils::RankRevealAll();
 
 			Render::Get().BeginScene();
 		}

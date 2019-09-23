@@ -233,10 +233,9 @@ public:
 	NETVAR(int32_t, m_iAccount, "DT_CSPlayer", "m_iAccount");
 	NETVAR(float, m_flFlashDuration, "DT_CSPlayer", "m_flFlashDuration");
 	NETVAR(float, m_flSimulationTime, "DT_BaseEntity", "m_flSimulationTime");
-	NETVAR(float, m_flCycle, "DT_ServerAnimationData", "m_flCycle");
+	NETVAR(float, m_flCycle, "DT_BaseAnimating", "m_flCycle");
 	NETVAR(int, m_nSequence, "DT_BaseViewModel", "m_nSequence");
-	PNETVAR(char, m_szLastPlaceName, "DT_BasePlayer", "m_szLastPlaceName");
-	NETPROP(m_flLowerBodyYawTargetProp, "DT_CSPlayer", "m_flLowerBodyYawTarget");
+	NETVAR(float, m_flNextAttack, "DT_BaseCombatCharacter", "m_flNextAttack");
 
 	//NETVAR(int, m_iAccount, "DT_CSPlayer", "m_iAccount");
 
@@ -245,7 +244,7 @@ public:
 	NETVAR(Vector, m_angAbsOrigin, "DT_BaseEntity", "m_angAbsOrigin");
 	NETVAR(float, m_flDuckSpeed, "DT_BaseEntity", "m_flDuckSpeed");
 	NETVAR(float, m_flDuckAmount, "DT_BaseEntity", "m_flDuckAmount");
-	std::array<float, 24> m_flPoseParameter() const {
+	std::array<float, 24> &m_flPoseParameter() const {
 		static int _m_flPoseParameter = NetvarSys::Get().GetOffset("DT_BaseAnimating", "m_flPoseParameter");
 		return *(std::array<float, 24>*)((uintptr_t)this + _m_flPoseParameter);
 	}
@@ -253,7 +252,10 @@ public:
 
 	PNETVAR(CHandle<C_BaseCombatWeapon>, m_hMyWeapons, "DT_BaseCombatCharacter", "m_hMyWeapons");
 	PNETVAR(CHandle<C_BaseAttributableItem>, m_hMyWearables, "DT_BaseCombatCharacter", "m_hMyWearables");
+	PNETVAR(char, m_szLastPlaceName, "DT_BasePlayer", "m_szLastPlaceName");
 
+
+	NETPROP(m_flLowerBodyYawTargetProp, "DT_CSPlayer", "m_flLowerBodyYawTarget");
 	CUserCmd*& m_pCurrentCommand();
 
 	/*gladiator v2*/
